@@ -7,6 +7,7 @@ import Gallery from './components/Gallery';
 import HomePage from './pages/HomePage'
 import Contact from './pages/Contact'
 import { Footer } from './components/Footer';
+import AdminGalleryPanel from './pages/AdminGalleryPanel';
 
 
 const PrivateRoute = ({ children }) => {
@@ -38,6 +39,7 @@ const App = () => {
                 </PrivateRoute>
               }
             />
+            <Route path="/admin" element={<AdminGalleryPanel />} />
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/contact" element={<Contact />} />
           </Routes>

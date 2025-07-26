@@ -1,44 +1,35 @@
 const express = require('express');
 const router = express.Router();
-const Image = require('../models/Image');
-const authenticate = require('../middleware/auth');
-const fs = require('fs').promises;
+const Gallery = require('../models/Gallery');
+const upload = require('../middleware/multer');
+const fs = require('fs');
 const path = require('path');
 
-// Tüm görselleri getir
+// GET: Tüm görseller
 router.get('/', async (req, res) => {
-  try {
-    const images = await Image.find().sort({ createdAt: -1 });
-    res.json(images);
-  } catch (error) {
-    console.error('Gallery fetch error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
+  const images = await Gallery.find().sort({ createdAt: -1 });
+  res.json(images);
 });
 
-// Görsel silme (sadece admin)
-router.delete('/:id', authenticate, async (req, res) => {
+// POST: Yeni görsel yükleme
+router.post('/', upload.single('image'), async (req, res) => {
+  const newImage = new Gallery({ imageUrl: req.file.filename });
+  await newImage.save();
+  res.status(201).json(newImage);
+});
+
+// DELETE: Görsel sil
+router.delete('/:id', async (req, res) => {
   try {
-    const image = await Image.findById(req.params.id);
-    
-    if (!image) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Image not found' 
-      });
-    }
+    const image = await Gallery.findById(req.params.id);
+    if (!image) return res.status(404).json({ message: 'Not found' });
 
-    // Dosyayı fiziksel olarak sil
-    const filePath = path.join(__dirname, '..', image.filePath);
-    await fs.unlink(filePath);
-
-    // Veritabanından sil
-    await Image.findByIdAndDelete(req.params.id);
-
-    res.json({ success: true, message: 'Image deleted successfully' });
+    const filePath = path.join(__dirname, '../uploads', image.imageUrl);
+    fs.unlinkSync(filePath);
+    await image.deleteOne();
+    res.json({ message: 'Deleted' });
   } catch (error) {
-    console.error('Delete error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ error: error.message });
   }
 });
 
